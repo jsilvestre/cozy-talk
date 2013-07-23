@@ -21,11 +21,9 @@ exports.config =
             order:
                 before: [
                     # Backbone
-                    'vendor/scripts/jquery-1.9.1.js',
-                    'vendor/scripts/underscore.js',
-                    'vendor/scripts/backbone.js',
-                    # Twitter Bootstrap jquery plugins
-                    'vendor/scripts/bootstrap.js',
+                    'vendor/jquery-1.9.1.js',
+                    'vendor/underscore-1.5.1.js',
+                    'vendor/backbone-1.0.0.js'
                 ]
                 after: [
                 ]

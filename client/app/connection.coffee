@@ -22,19 +22,19 @@ module.exports.init = (config, onRemoteStreamAdded, onRemoteStreamRemoved, local
             pc.onremovestream = onRemoteStreamRemoved
             pc.addStream localStream
 
-            logger.log('Created RTCPeerConnnection with:\n' +
+            logger.log('Created RTCPeerConnection with:\n' +
                       '  config: \'' + JSON.stringify(config) + '\';\n' +
                       '  constraints: \'' + JSON.stringify(pcConstraints) + '\'.');
-            
+
             console.log 'HERE', initiator
 
             pc.onicecandidate = (event) ->
-                if event.candidate 
+                if event.candidate
                     c = makeCandidate event.candidate
-                    
+
                     if iceCandidateReceiving
                         socket.emit 'candidate', c
-                    else                        
+                    else
                         iceCandidates.push c
                 # else
                 #     # we have all candidates
@@ -58,7 +58,7 @@ module.exports.init = (config, onRemoteStreamAdded, onRemoteStreamRemoved, local
                             candidate:     candidate.candidate
 
                     callback null, pc
-                
+
                 , null, sdpConstraints
 
             socket.on 'answer', (answer) ->
@@ -101,9 +101,9 @@ initSocket = (callback) ->
     pathToSocketIO = "#{window.location.pathname.substring(1)}socket.io"
     socket = io.connect url, resource: pathToSocketIO
 
-    socket.on 'initiator', (initiator) -> 
-        if initiator 
-            socket.on 'connect', -> 
+    socket.on 'initiator', (initiator) ->
+        if initiator
+            socket.on 'connect', ->
                 console.log "FRIEND IS HERE"
                 callback null, initiator, socket
         else

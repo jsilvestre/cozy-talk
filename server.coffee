@@ -8,10 +8,10 @@ app = express()
 
 # Static files
 
-staticServer = express.static __dirname + '/client/public', 
+staticServer = express.static __dirname + '/client/public',
     maxAge: 86400000
 
-app.use '/public', staticServer
+app.use '/', staticServer
 app.use staticServer
 
 # Logger for non static-files
@@ -35,14 +35,14 @@ io.sockets.on 'connection', (socket) ->
     socket.emit 'initiator', initiator
     initiator = false
 
-    ['connect', 'candidate', 'offer', 'answer', 'bye'].forEach (type) ->
+    ['connect', 'offer', 'candidate', 'answer', 'bye'].forEach (type) ->
         socket.on type, (data) ->
             console.log 'broadcasting', type
             socket.broadcast.emit type, data
 
     socket.on 'disconnect', ->
         console.log "ONE CIENT DISCONNECTED"
-        initiator = true if io.sockets.clients().length is 1 
+        initiator = true if io.sockets.clients().length is 1
 
 # Start Server
 
