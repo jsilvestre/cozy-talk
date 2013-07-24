@@ -52,6 +52,11 @@ module.exports = class User extends Backbone.Events
         @socket.on 'answer', (answer) =>
             @onAnswerReceived answer
 
+        @socket.on 'candidate', (candidate) =>
+            @pc.addIceCandidate new RTCIceCandidate
+                sdpMLineIndex: candidate.label
+                candidate:     candidate.candidate
+
     onOfferReceived: (offer) ->
         console.log "RECEIVED OFFER", offer
         offer.sdp = addStereo offer.sdp
@@ -72,11 +77,6 @@ module.exports = class User extends Backbone.Events
         @handleCandidates()
 
     handleCandidates: ->
-        @socket.on 'candidate', (candidate) =>
-            @pc.addIceCandidate new RTCIceCandidate
-                sdpMLineIndex: candidate.label
-                candidate:     candidate.candidate
-
         @iceCandidateReceiving = true
         for candidate in @iceCandidates
             @socket.emit 'candidate', candidate

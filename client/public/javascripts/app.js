@@ -252,8 +252,14 @@ window.require.register("User", function(exports, require, module) {
       this.socket.on('offer', function(offer) {
         return _this.onOfferReceived(offer);
       });
-      return this.socket.on('answer', function(answer) {
+      this.socket.on('answer', function(answer) {
         return _this.onAnswerReceived(answer);
+      });
+      return this.socket.on('candidate', function(candidate) {
+        return _this.pc.addIceCandidate(new RTCIceCandidate({
+          sdpMLineIndex: candidate.label,
+          candidate: candidate.candidate
+        }));
       });
     };
 
@@ -278,14 +284,7 @@ window.require.register("User", function(exports, require, module) {
     };
 
     User.prototype.handleCandidates = function() {
-      var candidate, _i, _len, _ref1, _results,
-        _this = this;
-      this.socket.on('candidate', function(candidate) {
-        return _this.pc.addIceCandidate(new RTCIceCandidate({
-          sdpMLineIndex: candidate.label,
-          candidate: candidate.candidate
-        }));
-      });
+      var candidate, _i, _len, _ref1, _results;
       this.iceCandidateReceiving = true;
       _ref1 = this.iceCandidates;
       _results = [];
