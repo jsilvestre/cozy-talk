@@ -13,6 +13,7 @@ module.exports = class User extends Backbone.Events
 
     pc: null
     socket: null
+    streamHandler: null
 
     constructor: (@socket, @config) ->
         @iceCandidates = []
@@ -44,37 +45,42 @@ module.exports = class User extends Backbone.Events
                     @socket.emit 'candidate', c
                 else
                     @iceCandidates.push c
+
         @socket.on 'offer', (offer) =>
-            offer.sdp = addStereo offer.sdp
-            @pc.setRemoteDescription new RTCSessionDescription offer
-            @pc.createAnswer (answer) =>
-                console.log "ANSWER IS READY"
-                @pc.setLocalDescription answer
-                @socket.emit 'answer', answer
-
-                @iceCandidateReceiving = true
-                for candidate in @iceCandidates
-                    @socket.emit 'candidate', candidate
-
-                @socket.on 'candidate', (candidate) =>
-                    @pc.addIceCandidate new RTCIceCandidate
-                        sdpMLineIndex: candidate.label
-                        candidate:     candidate.candidate
-
-                , null, sdpConstraints
+            @onOfferReceived offer
 
         @socket.on 'answer', (answer) =>
-            console.log "RECEIVED ANSWER", answer
-            @pc.setRemoteDescription new RTCSessionDescription answer
+            @onAnswerReceived answer
 
-            @iceCandidateReceiving = true
-            for candidate in @iceCandidates
-                @socket.emit 'candidate', candidate
+    onOfferReceived: (offer) ->
+        console.log "RECEIVED OFFER", offer
+        offer.sdp = addStereo offer.sdp
+        @pc.setRemoteDescription new RTCSessionDescription offer
+        @pc.createAnswer (answer) =>
+            console.log "SENDING ANSWER"
+            @pc.setLocalDescription answer
+            @socket.emit 'answer', answer
 
-            @socket.on 'candidate', (candidate) =>
-                @pc.addIceCandidate new RTCIceCandidate
-                    sdpMLineIndex: candidate.label
-                    candidate:     candidate.candidate
+            @handleCandidates()
+
+        , null, sdpConstraints
+
+    onAnswerReceived: (answer) ->
+        console.log "RECEIVED ANSWER", answer
+        answer.sdp = addStereo answer.sdp
+        @pc.setRemoteDescription new RTCSessionDescription answer
+        @handleCandidates()
+
+    handleCandidates: ->
+        @socket.on 'candidate', (candidate) =>
+            @pc.addIceCandidate new RTCIceCandidate
+                sdpMLineIndex: candidate.label
+                candidate:     candidate.candidate
+
+        @iceCandidateReceiving = true
+        for candidate in @iceCandidates
+            @socket.emit 'candidate', candidate
+
 
     onRemoteStreamAdded: (event) ->
         console.log "Remote stream added."

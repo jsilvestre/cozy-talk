@@ -211,6 +211,8 @@ window.require.register("User", function(exports, require, module) {
 
     User.prototype.socket = null;
 
+    User.prototype.streamHandler = null;
+
     function User(socket, config) {
       this.socket = socket;
       this.config = config;
@@ -248,44 +250,50 @@ window.require.register("User", function(exports, require, module) {
         }
       };
       this.socket.on('offer', function(offer) {
-        offer.sdp = addStereo(offer.sdp);
-        _this.pc.setRemoteDescription(new RTCSessionDescription(offer));
-        return _this.pc.createAnswer(function(answer) {
-          var candidate, _i, _len, _ref1;
-          console.log("ANSWER IS READY");
-          _this.pc.setLocalDescription(answer);
-          _this.socket.emit('answer', answer);
-          _this.iceCandidateReceiving = true;
-          _ref1 = _this.iceCandidates;
-          for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-            candidate = _ref1[_i];
-            _this.socket.emit('candidate', candidate);
-          }
-          return _this.socket.on('candidate', function(candidate) {
-            return _this.pc.addIceCandidate(new RTCIceCandidate({
-              sdpMLineIndex: candidate.label,
-              candidate: candidate.candidate
-            }));
-          }, null, sdpConstraints);
-        });
+        return _this.onOfferReceived(offer);
       });
       return this.socket.on('answer', function(answer) {
-        var candidate, _i, _len, _ref1;
-        console.log("RECEIVED ANSWER", answer);
-        _this.pc.setRemoteDescription(new RTCSessionDescription(answer));
-        _this.iceCandidateReceiving = true;
-        _ref1 = _this.iceCandidates;
-        for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-          candidate = _ref1[_i];
-          _this.socket.emit('candidate', candidate);
-        }
-        return _this.socket.on('candidate', function(candidate) {
-          return _this.pc.addIceCandidate(new RTCIceCandidate({
-            sdpMLineIndex: candidate.label,
-            candidate: candidate.candidate
-          }));
-        });
+        return _this.onAnswerReceived(answer);
       });
+    };
+
+    User.prototype.onOfferReceived = function(offer) {
+      var _this = this;
+      console.log("RECEIVED OFFER", offer);
+      offer.sdp = addStereo(offer.sdp);
+      this.pc.setRemoteDescription(new RTCSessionDescription(offer));
+      return this.pc.createAnswer(function(answer) {
+        console.log("SENDING ANSWER");
+        _this.pc.setLocalDescription(answer);
+        _this.socket.emit('answer', answer);
+        return _this.handleCandidates();
+      }, null, sdpConstraints);
+    };
+
+    User.prototype.onAnswerReceived = function(answer) {
+      console.log("RECEIVED ANSWER", answer);
+      answer.sdp = addStereo(answer.sdp);
+      this.pc.setRemoteDescription(new RTCSessionDescription(answer));
+      return this.handleCandidates();
+    };
+
+    User.prototype.handleCandidates = function() {
+      var candidate, _i, _len, _ref1, _results,
+        _this = this;
+      this.socket.on('candidate', function(candidate) {
+        return _this.pc.addIceCandidate(new RTCIceCandidate({
+          sdpMLineIndex: candidate.label,
+          candidate: candidate.candidate
+        }));
+      });
+      this.iceCandidateReceiving = true;
+      _ref1 = this.iceCandidates;
+      _results = [];
+      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
+        candidate = _ref1[_i];
+        _results.push(this.socket.emit('candidate', candidate));
+      }
+      return _results;
     };
 
     User.prototype.onRemoteStreamAdded = function(event) {
@@ -574,7 +582,6 @@ window.require.register("initialize", function(exports, require, module) {
   CalleeUser = require('./CalleeUser');
 
   $(function() {
-    remoteVideo = document.getElementById('remoteVideo');
     localStreamHandler = new StreamHandler({
       el: '#localVideo'
     });
