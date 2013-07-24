@@ -20,4 +20,6 @@ module.exports.getUserMedia = (constraints, success, error) ->
 
     return navigator.getUserMedia constraints, success, error
 
-  module.exports.RTCPeerConnection = RTCPeerConnection || mozRTCPeerConnection || webkitRTCPeerConnection
+module.exports.RTCPeerConnection = RTCPeerConnection || \
+                                   mozRTCPeerConnection || \
+                                   webkitRTCPeerConnection
