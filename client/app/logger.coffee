@@ -1,11 +1,11 @@
 module.exports.log = () ->
 	console.log.apply console, arguments
 
-module.exports.status = (txt) -> 
-	$('#footer').text txt
+module.exports.status = (txt) ->
+    $('#footer').text txt
 
 module.exports.handle = (err, type) ->
-    msgs = 
+    msgs =
         'local' : 'Failed to get access to local media. Error code was '
         'peer' : 'Failed to create PeerConnection, exception: '
 

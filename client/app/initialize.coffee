@@ -1,60 +1,35 @@
-
-{mediaConstraints, pcConfig, pcConstraints,
-    offerConstraints, sdpConstraints} = require 'config'
-
-# WILL BREAK
-xmlhttp = remoteVideo = remoteStream = miniVideo = localStream = pc = null
-
-localStreamHandler = null
-
-onLocalStreamReady = (stream) ->
-    attachMediaStream miniVideo, stream
-
-onRemoteStreamAdded = (event) ->
-    console.log('Remote stream added.')
-    attachMediaStream remoteVideo, event.stream
-    remoteStream = event.stream
-    # waitForRemoteVideo()
-
-onRemoteStreamRemoved = (event) ->
-    console.log('Remote stream removed.')
-
-logger = require 'logger'
-localstream = require 'localstream'
-connection  = require 'connection'
-ICEServers  = require 'ice_servers'
-
+logger        = require 'logger'
 StreamHandler = require './StreamHandler'
-CallerUser = require './CallerUser'
-CalleeUser = require './CalleeUser'
+CallerUser    = require './CallerUser'
+CalleeUser    = require './CalleeUser'
 
 $ ->
+    # normalize prefixed methods
+    require 'browser-interface'
+
     localStreamHandler = new StreamHandler
                             el: '#localVideo'
 
-    $('#footer').prepend '<li>Initializing the application...</li>'
+    logger.status 'Initializing the application...'
 
-    localstream.init (err, stream) ->
-        return logger.handle err, 'local' if err
+    localStreamHandler.setLocalStream()
+    localStreamHandler.on 'error', (err) ->
+        logger.status 'This will not work if you dont share your webcam'
 
-        localStreamHandler.attachMediaStream stream
-        $('#footer').prepend '<li>Local video OK</li>'
+    localStreamHandler.on 'localstreamready', (stream) ->
+        logger.status 'Local video OK'
 
-        ICEServers.makePeerConfig (err, config) ->
-            return alert err if err
+        url = window.location.origin
+        pathToSocketIO = "#{window.location.pathname.substring(1)}socket.io"
+        socket = io.connect url, resource: pathToSocketIO
 
-            user = null
-            url = window.location.origin
-            pathToSocketIO = "#{window.location.pathname.substring(1)}socket.io"
-            socket = io.connect url, resource: pathToSocketIO
+        socket.on 'initiator', (initiator) ->
 
-            socket.on 'initiator', (initiator) ->
+            if initiator
+                user = new CallerUser socket
+            else
+                user = new CalleeUser socket
 
-                if initiator
-                    user = new CallerUser socket, config
-                else
-                    user = new CalleeUser socket, config
-
-                user.streamHandler = localStreamHandler
-                user.initialize()
+            user.stream = stream
+            user.initialize()
 

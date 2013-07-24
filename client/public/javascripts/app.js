@@ -80,16 +80,20 @@
 })();
 
 window.require.register("CalleeUser", function(exports, require, module) {
-  var CalleeUser, User, _ref,
+  var CalleeUser, User, sdpConstraints, _ref,
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
   User = require('./User');
 
+  sdpConstraints = require('config').sdpConstraints;
+
   module.exports = CalleeUser = (function(_super) {
     __extends(CalleeUser, _super);
 
     function CalleeUser() {
+      this.onOfferReceived = __bind(this.onOfferReceived, this);
       _ref = CalleeUser.__super__.constructor.apply(this, arguments);
       return _ref;
     }
@@ -100,52 +104,140 @@ window.require.register("CalleeUser", function(exports, require, module) {
       return this.initializePeerConnection();
     };
 
+    CalleeUser.prototype.initializePeerConnection = function() {
+      CalleeUser.__super__.initializePeerConnection.apply(this, arguments);
+      return this.socket.on('offer', this.onOfferReceived);
+    };
+
+    CalleeUser.prototype.onOfferReceived = function(offer) {
+      var _this = this;
+      console.log("RECEIVED OFFER", offer);
+      this.pc.setRemoteDescription(new RTCSessionDescription(offer));
+      return this.pc.createAnswer(function(answer) {
+        console.log("SENDING ANSWER");
+        _this.pc.setLocalDescription(answer);
+        _this.socket.emit('answer', answer);
+        return _this.iceManager.handleCandidates();
+      }, null, sdpConstraints);
+    };
+
     return CalleeUser;
 
   })(User);
   
 });
 window.require.register("CallerUser", function(exports, require, module) {
-  var CallerUser, User, offerConstraints, sdpConstraints, _ref, _ref1,
+  var CallerUser, User, logger, sdpConstraints, _ref,
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
 
   User = require('./User');
 
-  _ref = require('config'), offerConstraints = _ref.offerConstraints, sdpConstraints = _ref.sdpConstraints;
+  sdpConstraints = require('config').sdpConstraints;
+
+  logger = require('logger');
 
   module.exports = CallerUser = (function(_super) {
     __extends(CallerUser, _super);
 
     function CallerUser() {
-      _ref1 = CallerUser.__super__.constructor.apply(this, arguments);
-      return _ref1;
+      this.onAnswerReceived = __bind(this.onAnswerReceived, this);
+      _ref = CallerUser.__super__.constructor.apply(this, arguments);
+      return _ref;
     }
 
     CallerUser.prototype.initialize = function() {
       var _this = this;
       CallerUser.__super__.initialize.call(this);
       return this.socket.on('connect', function() {
-        $('#footer').prepend('<li>A friend has connected.</li>');
+        logger.status('A friend has connected.');
         return _this.initializePeerConnection();
       });
     };
 
     CallerUser.prototype.initializePeerConnection = function() {
-      var constraints,
-        _this = this;
+      var _this = this;
       CallerUser.__super__.initializePeerConnection.call(this);
-      constraints = mergeConstraints(offerConstraints, sdpConstraints);
-      return this.pc.createOffer(function(offer) {
+      this.pc.createOffer(function(offer) {
         console.log("OFFER IS READY");
         _this.pc.setLocalDescription(offer);
         return _this.socket.emit('offer', offer);
-      }, null, constraints);
+      }, null, sdpConstraints);
+      return this.socket.on('answer', this.onAnswerReceived);
+    };
+
+    CallerUser.prototype.onAnswerReceived = function(answer) {
+      console.log("RECEIVED ANSWER", answer);
+      this.pc.setRemoteDescription(new RTCSessionDescription(answer));
+      return this.iceManager.handleCandidates();
     };
 
     return CallerUser;
 
   })(User);
+  
+});
+window.require.register("ICEManager", function(exports, require, module) {
+  var ICEManager,
+    __bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+
+  module.exports = ICEManager = (function() {
+    ICEManager.makeCandidate = function(c) {
+      return {
+        label: c.sdpMLineIndex,
+        id: c.sdpMid,
+        candidate: c.candidate
+      };
+    };
+
+    ICEManager.makePeerConfig = function() {
+      return require('config').pcConfig;
+    };
+
+    function ICEManager(pc, socket) {
+      this.pc = pc;
+      this.socket = socket;
+      this.onRemoteIceCandidate = __bind(this.onRemoteIceCandidate, this);
+      this.onIceCandidate = __bind(this.onIceCandidate, this);
+      this.iceCandidates = [];
+      this.iceCandidateReceiving = false;
+    }
+
+    ICEManager.prototype.onIceCandidate = function(event) {
+      var c;
+      if (event.candidate) {
+        c = ICEManager.makeCandidate(event.candidate);
+        if (this.iceCandidateReceiving) {
+          return this.socket.emit('candidate', c);
+        } else {
+          return this.iceCandidates.push(c);
+        }
+      }
+    };
+
+    ICEManager.prototype.onRemoteIceCandidate = function(candidate) {
+      return this.pc.addIceCandidate(new RTCIceCandidate({
+        sdpMLineIndex: candidate.label,
+        candidate: candidate.candidate
+      }));
+    };
+
+    ICEManager.prototype.handleCandidates = function() {
+      var candidate, _i, _len, _ref, _results;
+      this.iceCandidateReceiving = true;
+      _ref = this.iceCandidates;
+      _results = [];
+      for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+        candidate = _ref[_i];
+        _results.push(this.socket.emit('candidate', candidate));
+      }
+      return _results;
+    };
+
+    return ICEManager;
+
+  })();
   
 });
 window.require.register("StreamHandler", function(exports, require, module) {
@@ -178,17 +270,39 @@ window.require.register("StreamHandler", function(exports, require, module) {
       }
     };
 
+    StreamHandler.prototype.detachMediaStream = function() {};
+
+    StreamHandler.prototype.setLocalStream = function() {
+      var err, mediaConstraints, onUserMediaError, onUserMediaSuccess,
+        _this = this;
+      mediaConstraints = require('config').mediaConstraints;
+      try {
+        onUserMediaSuccess = function(stream) {
+          console.log('User has granted access to local media.');
+          _this.attachMediaStream(stream);
+          return _this.trigger('localstreamready', stream);
+        };
+        onUserMediaError = function(error) {
+          console.log("ERROR HERE");
+          return _this.trigger('error', error);
+        };
+        navigator.getUserMedia(mediaConstraints, onUserMediaSuccess, onUserMediaError);
+        return console.log('Requested access to local media with mediaConstraints:\n', '  \'' + JSON.stringify(mediaConstraints) + '\'');
+      } catch (_error) {
+        err = _error;
+        return this.trigger(err);
+      }
+    };
+
     return StreamHandler;
 
   })(Backbone.View);
   
 });
 window.require.register("User", function(exports, require, module) {
-  var RTCPeerConnection, StreamHandler, User, logger, makeCandidate, offerConstraints, pcConstraints, sdpConstraints, _ref,
+  var ICEManager, StreamHandler, User, logger, offerConstraints, pcConstraints, sdpConstraints, _ref,
     __hasProp = {}.hasOwnProperty,
     __extends = function(child, parent) { for (var key in parent) { if (__hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; };
-
-  RTCPeerConnection = require('browser-interface').RTCPeerConnection;
 
   _ref = require('config'), pcConstraints = _ref.pcConstraints, offerConstraints = _ref.offerConstraints, sdpConstraints = _ref.sdpConstraints;
 
@@ -196,13 +310,7 @@ window.require.register("User", function(exports, require, module) {
 
   StreamHandler = require('./StreamHandler');
 
-  makeCandidate = function(c) {
-    return {
-      label: c.sdpMLineIndex,
-      id: c.sdpMid,
-      candidate: c.candidate
-    };
-  };
+  ICEManager = require('./ICEManager');
 
   module.exports = User = (function(_super) {
     __extends(User, _super);
@@ -211,11 +319,10 @@ window.require.register("User", function(exports, require, module) {
 
     User.prototype.socket = null;
 
-    User.prototype.streamHandler = null;
+    User.prototype.stream = null;
 
-    function User(socket, config) {
+    function User(socket) {
       this.socket = socket;
-      this.config = config;
       this.iceCandidates = [];
       this.iceCandidateReceiving = false;
     }
@@ -232,80 +339,30 @@ window.require.register("User", function(exports, require, module) {
     };
 
     User.prototype.initializePeerConnection = function() {
-      var _this = this;
-      this.pc = new RTCPeerConnection(this.config, pcConstraints);
+      var config;
+      config = ICEManager.makePeerConfig();
+      this.pc = new RTCPeerConnection(config, pcConstraints);
+      this.iceManager = new ICEManager(this.pc, this.socket);
       this.pc.onaddstream = this.onRemoteStreamAdded;
       this.pc.onremovestream = this.onRemoteStreamRemoved;
-      this.pc.addStream(this.streamHandler.stream);
+      this.pc.addStream(this.stream);
       logger.log('Created RTCPeerConnection with:\n' + '  config: \'' + JSON.stringify(this.config) + '\';\n' + '  constraints: \'' + JSON.stringify(pcConstraints) + '\'.');
-      this.pc.onicecandidate = function(event) {
-        var c;
-        if (event.candidate) {
-          c = makeCandidate(event.candidate);
-          if (_this.iceCandidateReceiving) {
-            return _this.socket.emit('candidate', c);
-          } else {
-            return _this.iceCandidates.push(c);
-          }
-        }
-      };
-      this.socket.on('offer', function(offer) {
-        return _this.onOfferReceived(offer);
-      });
-      this.socket.on('answer', function(answer) {
-        return _this.onAnswerReceived(answer);
-      });
-      return this.socket.on('candidate', function(candidate) {
-        return _this.pc.addIceCandidate(new RTCIceCandidate({
-          sdpMLineIndex: candidate.label,
-          candidate: candidate.candidate
-        }));
-      });
-    };
-
-    User.prototype.onOfferReceived = function(offer) {
-      var _this = this;
-      console.log("RECEIVED OFFER", offer);
-      offer.sdp = addStereo(offer.sdp);
-      this.pc.setRemoteDescription(new RTCSessionDescription(offer));
-      return this.pc.createAnswer(function(answer) {
-        console.log("SENDING ANSWER");
-        _this.pc.setLocalDescription(answer);
-        _this.socket.emit('answer', answer);
-        return _this.handleCandidates();
-      }, null, sdpConstraints);
-    };
-
-    User.prototype.onAnswerReceived = function(answer) {
-      console.log("RECEIVED ANSWER", answer);
-      answer.sdp = addStereo(answer.sdp);
-      this.pc.setRemoteDescription(new RTCSessionDescription(answer));
-      return this.handleCandidates();
-    };
-
-    User.prototype.handleCandidates = function() {
-      var candidate, _i, _len, _ref1, _results;
-      this.iceCandidateReceiving = true;
-      _ref1 = this.iceCandidates;
-      _results = [];
-      for (_i = 0, _len = _ref1.length; _i < _len; _i++) {
-        candidate = _ref1[_i];
-        _results.push(this.socket.emit('candidate', candidate));
-      }
-      return _results;
+      this.pc.onicecandidate = this.iceManager.onIceCandidate;
+      return this.socket.on('candidate', this.iceManager.onRemoteIceCandidate);
     };
 
     User.prototype.onRemoteStreamAdded = function(event) {
-      var remoteStreamHandler;
       console.log("Remote stream added.");
-      remoteStreamHandler = new StreamHandler({
+      $('body').addClass('connected');
+      this.remoteStreamHandler = new StreamHandler({
         el: '#remoteVideo'
       });
-      return remoteStreamHandler.attachMediaStream(event.stream);
+      return this.remoteStreamHandler.attachMediaStream(event.stream);
     };
 
     User.prototype.onRemoteStreamRemoved = function(event) {
-      return console.log("Remote stream removed.");
+      console.log("Remote stream removed.");
+      return this.remoteStreamHandler.detachMediaStream();
     };
 
     return User;
@@ -314,30 +371,35 @@ window.require.register("User", function(exports, require, module) {
   
 });
 window.require.register("browser-interface", function(exports, require, module) {
-  module.exports.getUserMedia = function(constraints, success, error) {
-    var regex, version;
-    navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
-    if (navigator.webkitGetUserMedia) {
-      regex = /Chrom(e|ium)\/([0-9]+)\./;
-      version = parseInt(navigator.userAgent.match(regex)[2]);
-      console.log("Browser: Chrome. Detected version: " + version);
-    } else if (navigator.mozGetUserMedia) {
-      regex = /Firefox\/([0-9]+)\./;
-      version = parseInt(navigator.userAgent.match(regex)[1]);
-      console.log("Browser: Firefox. Detected version: " + version);
-    } else if (navigator.msGetUserMedia) {
-      console.log("Browser: IE.");
-    } else {
-      console.log("Browser: generic interface.");
-    }
-    return navigator.getUserMedia(constraints, success, error);
-  };
+  var logger, regex, version;
 
-  module.exports.RTCPeerConnection = RTCPeerConnection || mozRTCPeerConnection || webkitRTCPeerConnection;
+  logger = require('logger');
+
+  if (navigator.webkitGetUserMedia) {
+    regex = /Chrom(e|ium)\/([0-9]+)\./;
+    version = parseInt(navigator.userAgent.match(regex)[2]);
+    logger.status("Browser: Chrome. Detected version: " + version);
+  } else if (navigator.mozGetUserMedia) {
+    regex = /Firefox\/([0-9]+)\./;
+    version = parseInt(navigator.userAgent.match(regex)[1]);
+    logger.status("Browser: Firefox. Detected version: " + version);
+  } else if (navigator.msGetUserMedia) {
+    logger.status("Browser: IE.");
+  } else {
+    logger.status("Browser: generic interface.");
+  }
+
+  navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+
+  window.RTCPeerConnection = window.RTCPeerConnection || window.mozRTCPeerConnection || window.webkitRTCPeerConnection;
+
+  window.RTCSessionDescription = window.RTCSessionDescription || window.mozRTCSessionDescription || window.webkitRTCSessionDescription;
+
+  window.RTCIceCandidate = window.RTCIceCandidate || window.mozRTCIceCandidate || window.webkitRTCIceCandidate;
   
 });
 window.require.register("config", function(exports, require, module) {
-  var mediaConstraints, offerConstraints, pcConfig, pcConstraints, sdpConstraints;
+  var mediaConstraints, pcConfig, pcConstraints, sdpConstraints;
 
   mediaConstraints = {
     audio: true,
@@ -363,12 +425,8 @@ window.require.register("config", function(exports, require, module) {
     ]
   };
 
-  offerConstraints = {
-    optional: [],
-    mandatory: {}
-  };
-
   sdpConstraints = {
+    optional: [],
     mandatory: {
       OfferToReceiveAudio: true,
       OfferToReceiveVideo: true
@@ -379,200 +437,14 @@ window.require.register("config", function(exports, require, module) {
     mediaConstraints: mediaConstraints,
     pcConfig: pcConfig,
     pcConstraints: pcConstraints,
-    offerConstraints: offerConstraints,
     sdpConstraints: sdpConstraints
   };
   
 });
-window.require.register("connection", function(exports, require, module) {
-  var initSocket, makeCandidate;
-
-  makeCandidate = function(c) {
-    return {
-      label: c.sdpMLineIndex,
-      id: c.sdpMid,
-      candidate: c.candidate
-    };
-  };
-
-  module.exports.init = function(config, onRemoteStreamAdded, onRemoteStreamRemoved, localStream, callback) {
-    return initSocket(function(err, initiator, socket) {
-      var constraints, iceCandidateReceiving, iceCandidates, logger, offerConstraints, pc, pcConstraints, sdpConstraints, _ref;
-      _ref = require('config'), pcConstraints = _ref.pcConstraints, offerConstraints = _ref.offerConstraints, sdpConstraints = _ref.sdpConstraints;
-      logger = require('logger');
-      iceCandidates = [];
-      iceCandidateReceiving = false;
-      try {
-        pc = new RTCPeerConnection(config, pcConstraints);
-        pc.onaddstream = onRemoteStreamAdded;
-        pc.onremovestream = onRemoteStreamRemoved;
-        pc.addStream(localStream);
-        logger.log('Created RTCPeerConnection with:\n' + '  config: \'' + JSON.stringify(config) + '\';\n' + '  constraints: \'' + JSON.stringify(pcConstraints) + '\'.');
-        console.log('HERE', initiator);
-        pc.onicecandidate = function(event) {
-          var c;
-          if (event.candidate) {
-            c = makeCandidate(event.candidate);
-            if (iceCandidateReceiving) {
-              return socket.emit('candidate', c);
-            } else {
-              return iceCandidates.push(c);
-            }
-          }
-        };
-        socket.on('offer', function(offer) {
-          offer.sdp = addStereo(offer.sdp);
-          pc.setRemoteDescription(new RTCSessionDescription(offer));
-          return pc.createAnswer(function(answer) {
-            var candidate, _i, _len;
-            console.log("ANSWER IS READY");
-            pc.setLocalDescription(answer);
-            socket.emit('answer', answer);
-            iceCandidateReceiving = true;
-            for (_i = 0, _len = iceCandidates.length; _i < _len; _i++) {
-              candidate = iceCandidates[_i];
-              socket.emit('candidate', candidate);
-            }
-            socket.on('candidate', function(candidate) {
-              return pc.addIceCandidate(new RTCIceCandidate({
-                sdpMLineIndex: candidate.label,
-                candidate: candidate.candidate
-              }));
-            });
-            return callback(null, pc);
-          }, null, sdpConstraints);
-        });
-        socket.on('answer', function(answer) {
-          var candidate, _i, _len;
-          console.log("RECEIVED ANSWER", answer);
-          pc.setRemoteDescription(new RTCSessionDescription(answer));
-          iceCandidateReceiving = true;
-          for (_i = 0, _len = iceCandidates.length; _i < _len; _i++) {
-            candidate = iceCandidates[_i];
-            socket.emit('candidate', candidate);
-          }
-          socket.on('candidate', function(candidate) {
-            return pc.addIceCandidate(new RTCIceCandidate({
-              sdpMLineIndex: candidate.label,
-              candidate: candidate.candidate
-            }));
-          });
-          return callback(null, pc);
-        });
-        console.log('HERE2', initiator);
-        if (initiator) {
-          constraints = mergeConstraints(offerConstraints, sdpConstraints);
-          return pc.createOffer(function(offer) {
-            console.log("OFFER IS READY");
-            pc.setLocalDescription(offer);
-            return socket.emit('offer', offer);
-          }, null, constraints);
-        } else {
-
-        }
-      } catch (_error) {
-        err = _error;
-        return callback(err);
-      }
-    });
-  };
-
-  initSocket = function(callback) {
-    var pathToSocketIO, socket, url;
-    url = window.location.origin;
-    pathToSocketIO = "" + (window.location.pathname.substring(1)) + "socket.io";
-    socket = io.connect(url, {
-      resource: pathToSocketIO
-    });
-    socket.on('initiator', function(initiator) {
-      if (initiator) {
-        return socket.on('connect', function() {
-          console.log("FRIEND IS HERE");
-          return callback(null, initiator, socket);
-        });
-      } else {
-        socket.emit('connect', 'data');
-        return callback(null, initiator, socket);
-      }
-    });
-    return socket.on('bye', function() {
-      return pc.close();
-    });
-  };
-  
-});
-window.require.register("ice_servers", function(exports, require, module) {
-  module.exports.makePeerConfig = function(callback) {
-    var cb, iceServer, iceServers, turnUrl, xmlhttp, _i, _len;
-    iceServers = require('config').pcConfig.iceServers;
-    cb = function(err) {
-      return callback(err, {
-        iceServers: iceServers
-      });
-    };
-    return cb();
-    if (webrtcDetectedBrowser === 'firefox' && webrtcDetectedVersion <= 22) {
-      return cb();
-    }
-    for (_i = 0, _len = iceServers.length; _i < _len; _i++) {
-      iceServer = iceServers[_i];
-      if (iceServer.url.substr(0, 5) === 'turn:') {
-        return cb();
-      }
-    }
-    if (document.domain.search('localhost') === -1) {
-      return cb();
-    }
-    turnUrl = 'https://computeengineondemand.appspot.com/turn?username=14039877&key=4080218913';
-    xmlhttp = new XMLHttpRequest();
-    xmlhttp.onreadystatechange = function() {
-      var turnServer;
-      if (xmlhttp.readyState === 4 && xmlhttp.status === 200) {
-        turnServer = JSON.parse(xmlhttp.responseText);
-        iceServer = createIceServer(turnServer.uris[0], turnServer.username, turnServer.password);
-        if (iceServer !== null) {
-          iceServers.push(iceServer);
-        }
-      } else {
-        console.log('Request for TURN server failed.');
-      }
-      return cb();
-    };
-    xmlhttp.open('GET', turnUrl, true);
-    return xmlhttp.send();
-  };
-  
-});
 window.require.register("initialize", function(exports, require, module) {
-  var CalleeUser, CallerUser, ICEServers, StreamHandler, connection, localStream, localStreamHandler, localstream, logger, mediaConstraints, miniVideo, offerConstraints, onLocalStreamReady, onRemoteStreamAdded, onRemoteStreamRemoved, pc, pcConfig, pcConstraints, remoteStream, remoteVideo, sdpConstraints, xmlhttp, _ref;
-
-  _ref = require('config'), mediaConstraints = _ref.mediaConstraints, pcConfig = _ref.pcConfig, pcConstraints = _ref.pcConstraints, offerConstraints = _ref.offerConstraints, sdpConstraints = _ref.sdpConstraints;
-
-  xmlhttp = remoteVideo = remoteStream = miniVideo = localStream = pc = null;
-
-  localStreamHandler = null;
-
-  onLocalStreamReady = function(stream) {
-    return attachMediaStream(miniVideo, stream);
-  };
-
-  onRemoteStreamAdded = function(event) {
-    console.log('Remote stream added.');
-    attachMediaStream(remoteVideo, event.stream);
-    return remoteStream = event.stream;
-  };
-
-  onRemoteStreamRemoved = function(event) {
-    return console.log('Remote stream removed.');
-  };
+  var CalleeUser, CallerUser, StreamHandler, logger;
 
   logger = require('logger');
-
-  localstream = require('localstream');
-
-  connection = require('connection');
-
-  ICEServers = require('ice_servers');
 
   StreamHandler = require('./StreamHandler');
 
@@ -581,61 +453,36 @@ window.require.register("initialize", function(exports, require, module) {
   CalleeUser = require('./CalleeUser');
 
   $(function() {
+    var localStreamHandler;
+    require('browser-interface');
     localStreamHandler = new StreamHandler({
       el: '#localVideo'
     });
-    $('#footer').prepend('<li>Initializing the application...</li>');
-    return localstream.init(function(err, stream) {
-      if (err) {
-        return logger.handle(err, 'local');
-      }
-      localStreamHandler.attachMediaStream(stream);
-      $('#footer').prepend('<li>Local video OK</li>');
-      return ICEServers.makePeerConfig(function(err, config) {
-        var pathToSocketIO, socket, url, user;
-        if (err) {
-          return alert(err);
+    logger.status('Initializing the application...');
+    localStreamHandler.setLocalStream();
+    localStreamHandler.on('error', function(err) {
+      return logger.status('This will not work if you dont share your webcam');
+    });
+    return localStreamHandler.on('localstreamready', function(stream) {
+      var pathToSocketIO, socket, url;
+      logger.status('Local video OK');
+      url = window.location.origin;
+      pathToSocketIO = "" + (window.location.pathname.substring(1)) + "socket.io";
+      socket = io.connect(url, {
+        resource: pathToSocketIO
+      });
+      return socket.on('initiator', function(initiator) {
+        var user;
+        if (initiator) {
+          user = new CallerUser(socket);
+        } else {
+          user = new CalleeUser(socket);
         }
-        user = null;
-        url = window.location.origin;
-        pathToSocketIO = "" + (window.location.pathname.substring(1)) + "socket.io";
-        socket = io.connect(url, {
-          resource: pathToSocketIO
-        });
-        return socket.on('initiator', function(initiator) {
-          if (initiator) {
-            user = new CallerUser(socket, config);
-          } else {
-            user = new CalleeUser(socket, config);
-          }
-          user.streamHandler = localStreamHandler;
-          return user.initialize();
-        });
+        user.stream = stream;
+        return user.initialize();
       });
     });
   });
-  
-});
-window.require.register("localstream", function(exports, require, module) {
-  module.exports.init = function(callback) {
-    var err, getMedia, mediaConstraints, onUserMediaError, onUserMediaSuccess;
-    mediaConstraints = require('config').mediaConstraints;
-    getMedia = require('browser-interface').getUserMedia;
-    onUserMediaSuccess = function(stream) {
-      console.log('User has granted access to local media.');
-      return callback(null, stream);
-    };
-    onUserMediaError = function(error) {
-      return callback(error);
-    };
-    try {
-      getMedia(mediaConstraints, onUserMediaSuccess, onUserMediaError);
-      return console.log('Requested access to local media with mediaConstraints:\n', '  \'' + JSON.stringify(mediaConstraints) + '\'');
-    } catch (_error) {
-      err = _error;
-      return callback(err);
-    }
-  };
   
 });
 window.require.register("logger", function(exports, require, module) {

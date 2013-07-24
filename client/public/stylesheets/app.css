@@ -1,0 +1,59 @@
+* {
+  margin: 0px;
+  padding: 0px;
+}
+body {
+  height: 100%;
+  width: 100%;
+  background-color: #000;
+}
+#remoteVideo {
+  z-index: 10;
+  width: 100%;
+  position: absolute;
+  top: 0px;
+  left: 0px;
+}
+#localVideo {
+  z-index: 20;
+  -webkit-transition: 0.5s;
+  -moz-transition: 0.5s;
+  -o-transition: 0.5s;
+  -ms-transition: 0.5s;
+  transition: 0.5s;
+  position: absolute;
+  width: 100%;
+}
+.connected #localVideo {
+  -webkit-transition: 0.9s;
+  -moz-transition: 0.9s;
+  -o-transition: 0.9s;
+  -ms-transition: 0.9s;
+  transition: 0.9s;
+  -webkit-transition-delay: 1s;
+  -moz-transition-delay: 1s;
+  -o-transition-delay: 1s;
+  -ms-transition-delay: 1s;
+  transition-delay: 1s;
+  -webkit-transform: rotate(720deg);
+  -moz-transform: rotate(720deg);
+  -o-transform: rotate(720deg);
+  -ms-transform: rotate(720deg);
+  transform: rotate(720deg);
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 20%;
+}
+#footer {
+  z-index: 30;
+  position: absolute;
+  width: 100%;
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+  padding: 5px;
+  bottom: 0px;
+  height: 30px;
+  background-color: #fff;
+}

@@ -1,0 +1,42 @@
+@import 'nib'
+
+*
+    margin 0px
+    padding 0px
+
+body
+    height 100%
+    width 100%
+    background-color black
+
+#remoteVideo
+    z-index 10
+    width 100%
+    position absolute
+    top 0px
+    left 0px
+
+#localVideo
+    z-index 20
+    transition 0.5s
+    position absolute
+    width 100%
+
+.connected #localVideo
+    transition 0.9s
+    transition-delay 1s
+    transform rotate(720deg)
+    position absolute
+    top 10px
+    right 10px
+    width 20%
+
+#footer
+    z-index 30
+    position absolute
+    width 100%
+    box-sizing border-box
+    padding 5px
+    bottom 0px
+    height 30px
+    background-color white

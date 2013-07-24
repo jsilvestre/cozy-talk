@@ -1,25 +1,21 @@
-mediaConstraints = 
-    audio: true, 
+mediaConstraints =
+    audio: true,
     video: mandatory: {}, optional: []
 
-pcConfig = 
+pcConfig =
     iceServers: [url: "stun:stun.l.google.com:19302"]
 
-pcConstraints = 
+pcConstraints =
     optional: [DtlsSrtpKeyAgreement: true]
 
-offerConstraints = 
+sdpConstraints =
     optional: []
-    mandatory: {}
-
-sdpConstraints = 
     mandatory:
         OfferToReceiveAudio: true
-        OfferToReceiveVideo: true 
+        OfferToReceiveVideo: true
 
-module.exports = 
+module.exports =
     mediaConstraints : mediaConstraints
     pcConfig         : pcConfig
     pcConstraints    : pcConstraints
-    offerConstraints : offerConstraints
     sdpConstraints   : sdpConstraints

@@ -1,23 +1,29 @@
 User = require './User'
-{offerConstraints, sdpConstraints} = require 'config'
+{sdpConstraints} = require 'config'
+logger = require 'logger'
+
 module.exports = class CallerUser extends User
 
     initialize: ->
         super()
 
         @socket.on 'connect', =>
-            $('#footer').prepend('<li>A friend has connected.</li>')
+            logger.status 'A friend has connected.'
             @initializePeerConnection()
 
     initializePeerConnection: ->
 
         super()
 
-        constraints = mergeConstraints(offerConstraints, sdpConstraints)
-
-        # CAREFUL OPUS ?
         @pc.createOffer (offer) =>
             console.log "OFFER IS READY"
             @pc.setLocalDescription offer
             @socket.emit 'offer', offer
-        , null, constraints
+        , null, sdpConstraints
+
+        @socket.on 'answer', @onAnswerReceived
+
+    onAnswerReceived: (answer) =>
+        console.log "RECEIVED ANSWER", answer
+        @pc.setRemoteDescription new RTCSessionDescription answer
+        @iceManager.handleCandidates()
