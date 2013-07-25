@@ -24,7 +24,7 @@ $ ->
         socket = io.connect url, resource: pathToSocketIO
 
         socket.on 'initiator', (initiator) ->
-
+            console.log "Got initiator: ", initiator
             if initiator
                 logger.status 'Waiting for a friend to connect...'
                 user = new CallerUser socket

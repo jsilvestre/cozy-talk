@@ -472,6 +472,7 @@ window.require.register("initialize", function(exports, require, module) {
       });
       return socket.on('initiator', function(initiator) {
         var user;
+        console.log("Got initiator: ", initiator);
         if (initiator) {
           logger.status('Waiting for a friend to connect...');
           user = new CallerUser(socket);
