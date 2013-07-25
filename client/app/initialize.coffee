@@ -26,8 +26,10 @@ $ ->
         socket.on 'initiator', (initiator) ->
 
             if initiator
+                logger.status 'Waiting for a friend to connect...'
                 user = new CallerUser socket
             else
+                logger.status 'Connecting to a friend...'
                 user = new CalleeUser socket
 
             user.stream = stream

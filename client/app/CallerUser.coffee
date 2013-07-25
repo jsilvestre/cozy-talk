@@ -8,7 +8,7 @@ module.exports = class CallerUser extends User
         super()
 
         @socket.on 'connect', =>
-            logger.status 'A friend has connected.'
+            logger.status 'A friend has joined the conversation, connecting...'
             @initializePeerConnection()
 
     initializePeerConnection: ->
