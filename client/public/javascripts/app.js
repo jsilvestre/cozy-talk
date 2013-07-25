@@ -470,7 +470,7 @@ window.require.register("initialize", function(exports, require, module) {
       socket = io.connect(url, {
         resource: pathToSocketIO
       });
-      return socket.on('initiator', function(initiator) {
+      socket.on('initiator', function(initiator) {
         var user;
         console.log("Got initiator: ", initiator);
         if (initiator) {
@@ -482,6 +482,36 @@ window.require.register("initialize", function(exports, require, module) {
         }
         user.stream = stream;
         return user.initialize();
+      });
+      $('#mute-microphone').click(function() {
+        var audioTrack, buttonLabel, _i, _len, _ref;
+        console.log("Toggle microphone !");
+        _ref = localStreamHandler.stream.getAudioTracks();
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          audioTrack = _ref[_i];
+          audioTrack.enabled = !audioTrack.enabled;
+        }
+        if (audioTrack != null ? audioTrack.enabled : void 0) {
+          buttonLabel = 'Mute mic';
+        } else {
+          buttonLabel = 'Unmute mic';
+        }
+        return $('#mute-microphone').text(buttonLabel);
+      });
+      return $('#hide-camera').click(function() {
+        var buttonLabel, videoTrack, _i, _len, _ref;
+        console.log("Toggle camera !");
+        _ref = localStreamHandler.stream.getVideoTracks();
+        for (_i = 0, _len = _ref.length; _i < _len; _i++) {
+          videoTrack = _ref[_i];
+          videoTrack.enabled = !videoTrack.enabled;
+        }
+        if (videoTrack != null ? videoTrack.enabled : void 0) {
+          buttonLabel = 'Hide camera';
+        } else {
+          buttonLabel = 'Show camera';
+        }
+        return $('#hide-camera').text(buttonLabel);
       });
     });
   });

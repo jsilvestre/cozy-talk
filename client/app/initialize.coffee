@@ -35,3 +35,24 @@ $ ->
             user.stream = stream
             user.initialize()
 
+        $('#mute-microphone').click ->
+            console.log "Toggle microphone !"
+            for audioTrack in localStreamHandler.stream.getAudioTracks()
+                audioTrack.enabled = !audioTrack.enabled
+
+            if audioTrack?.enabled
+                buttonLabel = 'Mute mic'
+            else
+                buttonLabel = 'Unmute mic'
+            $('#mute-microphone').text buttonLabel
+
+        $('#hide-camera').click ->
+            console.log "Toggle camera !"
+            for videoTrack in localStreamHandler.stream.getVideoTracks()
+                videoTrack.enabled = !videoTrack.enabled
+
+            if videoTrack?.enabled
+                buttonLabel = 'Hide camera'
+            else
+                buttonLabel = 'Show camera'
+            $('#hide-camera').text buttonLabel
