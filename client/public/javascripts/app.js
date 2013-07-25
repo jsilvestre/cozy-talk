@@ -352,6 +352,7 @@ window.require.register("User", function(exports, require, module) {
     User.prototype.onRemoteStreamAdded = function(event) {
       console.log("Remote stream added.");
       $('body').addClass('connected');
+      logger.status('Connected.');
       this.remoteStreamHandler = new StreamHandler({
         el: '#remoteVideo'
       });

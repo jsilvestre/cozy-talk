@@ -40,6 +40,7 @@ module.exports = class User extends Backbone.Events
     onRemoteStreamAdded: (event) ->
         console.log "Remote stream added."
         $('body').addClass 'connected'
+        logger.status 'Connected.'
         @remoteStreamHandler = new StreamHandler
                                     el: '#remoteVideo'
         @remoteStreamHandler.attachMediaStream event.stream
