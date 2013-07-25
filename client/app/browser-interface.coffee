@@ -19,15 +19,15 @@ navigator.getUserMedia = navigator.getUserMedia or
                          navigator.mozGetUserMedia or
                          navigator.msGetUserMedia
 
-window.RTCPeerConnection = window.RTCPeerConnection or
-                           window.mozRTCPeerConnection or
+window.RTCPeerConnection = window.mozRTCPeerConnection or
+                           window.RTCPeerConnection or
                            window.webkitRTCPeerConnection
 
-window.RTCSessionDescription = window.RTCSessionDescription or
-                               window.mozRTCSessionDescription or
+window.RTCSessionDescription = window.mozRTCSessionDescription or
+                               window.RTCSessionDescription or
                                window.webkitRTCSessionDescription
 
-window.RTCIceCandidate = window.RTCIceCandidate or
-                         window.mozRTCIceCandidate or
+window.RTCIceCandidate = window.mozRTCIceCandidate or
+                         window.RTCIceCandidate or
                          window.webkitRTCIceCandidate
 
