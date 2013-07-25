@@ -17,7 +17,7 @@ $ ->
         logger.status 'This will not work if you dont share your webcam'
 
     localStreamHandler.on 'localstreamready', (stream) ->
-        logger.status 'Local video OK'
+        logger.status 'Local video OK.'
 
         url = window.location.origin
         pathToSocketIO = "#{window.location.pathname.substring(1)}socket.io"

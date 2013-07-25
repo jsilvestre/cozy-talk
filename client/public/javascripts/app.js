@@ -151,7 +151,7 @@ window.require.register("CallerUser", function(exports, require, module) {
       var _this = this;
       CallerUser.__super__.initialize.call(this);
       return this.socket.on('connect', function() {
-        logger.status('A friend has connected.');
+        logger.status('A friend has joined the conversation, connecting...');
         return _this.initializePeerConnection();
       });
     };
@@ -323,8 +323,6 @@ window.require.register("User", function(exports, require, module) {
 
     function User(socket) {
       this.socket = socket;
-      this.iceCandidates = [];
-      this.iceCandidateReceiving = false;
     }
 
     User.prototype.initialize = function() {
@@ -465,7 +463,7 @@ window.require.register("initialize", function(exports, require, module) {
     });
     return localStreamHandler.on('localstreamready', function(stream) {
       var pathToSocketIO, socket, url;
-      logger.status('Local video OK');
+      logger.status('Local video OK.');
       url = window.location.origin;
       pathToSocketIO = "" + (window.location.pathname.substring(1)) + "socket.io";
       socket = io.connect(url, {
@@ -474,8 +472,10 @@ window.require.register("initialize", function(exports, require, module) {
       return socket.on('initiator', function(initiator) {
         var user;
         if (initiator) {
+          logger.status('Waiting for a friend to connect...');
           user = new CallerUser(socket);
         } else {
+          logger.status('Connecting to a friend...');
           user = new CalleeUser(socket);
         }
         user.stream = stream;
