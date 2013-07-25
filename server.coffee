@@ -11,7 +11,7 @@ app = express()
 staticServer = express.static __dirname + '/client/public',
     maxAge: 86400000
 
-app.use '/', staticServer
+app.use '/public', staticServer
 app.use staticServer
 
 # Logger for non static-files
@@ -21,10 +21,13 @@ app.use express.errorHandler
     dumpExceptions: true
     showStack: true
 
+app.get '/', (req, res) -> res.redirect 'public/talk/'
+
 server = require('http').createServer(app)
 
 io = require('socket.io').listen(server)
 io.set 'log level', 1
+io.set 'resource', '/public/socket.io'
 
 
 initiator = true
