@@ -14,20 +14,20 @@ else
     logger.status "Browser: generic interface."
 
 
-navigator.getUserMedia = navigator.getUserMedia || \
-                            navigator.webkitGetUserMedia || \
-                            navigator.mozGetUserMedia || \
-                            navigator.msGetUserMedia
+navigator.getUserMedia = navigator.getUserMedia or
+                         navigator.webkitGetUserMedia or
+                         navigator.mozGetUserMedia or
+                         navigator.msGetUserMedia
 
-window.RTCPeerConnection = window.RTCPeerConnection || \
-                                   window.mozRTCPeerConnection || \
-                                   window.webkitRTCPeerConnection
+window.RTCPeerConnection = window.RTCPeerConnection or
+                           window.mozRTCPeerConnection or
+                           window.webkitRTCPeerConnection
 
-window.RTCSessionDescription = window.RTCSessionDescription || \
-                                   window.mozRTCSessionDescription || \
-                                   window.webkitRTCSessionDescription
+window.RTCSessionDescription = window.RTCSessionDescription or
+                               window.mozRTCSessionDescription or
+                               window.webkitRTCSessionDescription
 
-window.RTCIceCandidate = window.RTCIceCandidate || \
-                                   window.mozRTCIceCandidate || \
-                                   window.webkitRTCIceCandidate
+window.RTCIceCandidate = window.RTCIceCandidate or
+                         window.mozRTCIceCandidate or
+                         window.webkitRTCIceCandidate
 

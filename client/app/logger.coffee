@@ -2,7 +2,7 @@ module.exports.log = () ->
 	console.log.apply console, arguments
 
 module.exports.status = (txt) ->
-    $('#footer').text txt
+    $('#log').text txt
 
 module.exports.handle = (err, type) ->
     msgs =

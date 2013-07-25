@@ -1,5 +1,9 @@
 @import 'nib'
 
+blue = #34A6FF
+orange = #fe8800
+lightgrey = #ddd
+
 *
     margin 0px
     padding 0px
@@ -9,6 +13,8 @@ body
     width 100%
     background-color black
     overflow hidden
+    box-shadow inset 0 0 100px #4a7175
+    background-color #738182
 
 #remoteVideo
     z-index 10
@@ -40,7 +46,41 @@ body
     position absolute
     width 100%
     box-sizing border-box
-    padding 5px
     bottom 0px
-    height 30px
-    background-color white
+    height 50px
+    padding 5px
+    background-color lightgrey
+    font-size: 1.1em
+
+    #log
+        display block
+        float left
+        height 100%
+        margin-left 20px
+        line-height 40px
+
+    #commands
+        display block
+        float left
+        height 100%
+
+        button
+            width 90px
+            display block
+            float left
+            height 100%
+            padding 0px 2px
+            margin 0px 4px 0px 0px
+            border: 1px solid blue
+            background: blue
+            color: white
+            box-shadow: none
+            text-shadow: none
+            border-radius: 0
+            font-weight: bold
+
+        button:hover
+            background: orange
+            color: white
+            border-color: orange
+            text-shadow: none

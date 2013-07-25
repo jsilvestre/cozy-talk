@@ -11,8 +11,6 @@ module.exports = class User extends Backbone.Events
     stream: null
 
     constructor: (@socket) ->
-        @iceCandidates = []
-        @iceCandidateReceiving = false
 
     initialize: () ->
         @initializeSocket()

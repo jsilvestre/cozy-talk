@@ -491,7 +491,7 @@ window.require.register("logger", function(exports, require, module) {
   };
 
   module.exports.status = function(txt) {
-    return $('#footer').text(txt);
+    return $('#log').text(txt);
   };
 
   module.exports.handle = function(err, type) {
