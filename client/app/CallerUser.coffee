@@ -19,6 +19,9 @@ module.exports = class CallerUser extends User
 
         @pc.createOffer (offer) =>
             console.log "OFFER IS READY"
+            inline = 'a=crypto:1 AES_CM_128_HMAC_SHA1_80 inline:ABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890abc\r\nc=IN'
+            if offer.sdp.indexOf('a=crypto') == -1
+                offer.sdp = offer.sdp.replace(/c=IN/g, inline)
             @pc.setLocalDescription offer
             @socket.emit 'offer', offer
         , null, sdpConstraints

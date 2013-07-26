@@ -162,7 +162,12 @@ window.require.register("CallerUser", function(exports, require, module) {
       var _this = this;
       CallerUser.__super__.initializePeerConnection.call(this);
       this.pc.createOffer(function(offer) {
+        var inline;
         console.log("OFFER IS READY");
+        inline = 'a=crypto:1 AES_CM_128_HMAC_SHA1_80 inline:ABCDEFGHIJKLMNOPQRSTUVWXYZ01234567890abc\r\nc=IN';
+        if (offer.sdp.indexOf('a=crypto') === -1) {
+          offer.sdp = offer.sdp.replace(/c=IN/g, inline);
+        }
         _this.pc.setLocalDescription(offer);
         return _this.socket.emit('offer', offer);
       }, null, sdpConstraints);
@@ -418,21 +423,34 @@ window.require.register("config", function(exports, require, module) {
     ]
   };
 
-  pcConstraints = {
-    optional: [
-      {
-        DtlsSrtpKeyAgreement: true
+  if (window.webkitRTCPeerConnection) {
+    pcConstraints = {
+      optional: [
+        {
+          DtlsSrtpKeyAgreement: true
+        }
+      ]
+    };
+    sdpConstraints = {
+      optional: [],
+      mandatory: {
+        OfferToReceiveAudio: true,
+        OfferToReceiveVideo: true
       }
-    ]
-  };
-
-  sdpConstraints = {
-    optional: [],
-    mandatory: {
-      OfferToReceiveAudio: true,
-      OfferToReceiveVideo: true
-    }
-  };
+    };
+  } else {
+    pcConstraints = {
+      optional: []
+    };
+    sdpConstraints = {
+      optional: [],
+      mandatory: {
+        OfferToReceiveAudio: true,
+        OfferToReceiveVideo: true,
+        MozDontOfferDataChannel: true
+      }
+    };
+  }
 
   module.exports = {
     mediaConstraints: mediaConstraints,
