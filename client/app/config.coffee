@@ -2,28 +2,22 @@ mediaConstraints =
     audio: true,
     video: mandatory: {}, optional: []
 
-pcConfig =
-    iceServers: [url: "stun:stun.l.google.com:19302"]
-
-if window.webkitRTCPeerConnection
-    pcConstraints =
-        optional: [DtlsSrtpKeyAgreement: true]
-
-    sdpConstraints =
-        optional: []
-        mandatory:
-            OfferToReceiveAudio: true
-            OfferToReceiveVideo: true
+if window.mozRTCPeerConnection
+    pcConfig =
+        iceServers: [url: "stun:23.21.150.121"]
 else
-    pcConstraints =
-        optional: []
+    pcConfig =
+        iceServers: [url: "stun:stun.l.google.com:19302"]
 
-    sdpConstraints =
-        optional: []
-        mandatory:
-            OfferToReceiveAudio: true
-            OfferToReceiveVideo: true
-            MozDontOfferDataChannel: true
+pcConstraints =
+    optional: [DtlsSrtpKeyAgreement: true]
+
+sdpConstraints =
+    optional: []
+    mandatory:
+        OfferToReceiveAudio: true
+        OfferToReceiveVideo: true
+
 module.exports =
     mediaConstraints : mediaConstraints
     pcConfig         : pcConfig
