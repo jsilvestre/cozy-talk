@@ -30,7 +30,7 @@ module.exports = class User extends Backbone.Events
         @pc.addStream @stream
 
         logger.log('Created RTCPeerConnection with:\n' +
-          '  config: \'' + JSON.stringify(@config) + '\';\n' +
+          '  config: \'' + JSON.stringify(config) + '\';\n' +
           '  constraints: \'' + JSON.stringify(pcConstraints) + '\'.')
 
         @pc.onicecandidate = @iceManager.onIceCandidate

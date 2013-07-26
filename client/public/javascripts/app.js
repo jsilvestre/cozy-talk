@@ -346,7 +346,7 @@ window.require.register("User", function(exports, require, module) {
       this.pc.onaddstream = this.onRemoteStreamAdded;
       this.pc.onremovestream = this.onRemoteStreamRemoved;
       this.pc.addStream(this.stream);
-      logger.log('Created RTCPeerConnection with:\n' + '  config: \'' + JSON.stringify(this.config) + '\';\n' + '  constraints: \'' + JSON.stringify(pcConstraints) + '\'.');
+      logger.log('Created RTCPeerConnection with:\n' + '  config: \'' + JSON.stringify(config) + '\';\n' + '  constraints: \'' + JSON.stringify(pcConstraints) + '\'.');
       this.pc.onicecandidate = this.iceManager.onIceCandidate;
       return this.socket.on('candidate', this.iceManager.onRemoteIceCandidate);
     };
