@@ -151,6 +151,8 @@ window.require.register("CallerUser", function(exports, require, module) {
       var _this = this;
       CallerUser.__super__.initialize.call(this);
       return this.socket.on('connect', function() {
+        _this.socket.removeListener('answer', _this.onAnswerReceived);
+        _this.socket.removeListener('candidate', _this.onAnswerReceived);
         logger.status('A friend has joined the conversation, connecting...');
         return _this.initializePeerConnection();
       });

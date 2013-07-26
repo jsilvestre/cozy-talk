@@ -8,6 +8,8 @@ module.exports = class CallerUser extends User
         super()
 
         @socket.on 'connect', =>
+            @socket.removeListener 'answer', @onAnswerReceived
+            @socket.removeListener 'candidate', @onAnswerReceived
             logger.status 'A friend has joined the conversation, connecting...'
             @initializePeerConnection()
 
