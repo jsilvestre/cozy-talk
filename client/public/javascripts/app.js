@@ -418,6 +418,9 @@ window.require.register("config", function(exports, require, module) {
         }
       ]
     };
+    pcConstraints = {
+      optional: []
+    };
   } else {
     pcConfig = {
       iceServers: [
@@ -426,15 +429,14 @@ window.require.register("config", function(exports, require, module) {
         }
       ]
     };
+    pcConstraints = {
+      optional: [
+        {
+          DtlsSrtpKeyAgreement: true
+        }
+      ]
+    };
   }
-
-  pcConstraints = {
-    optional: [
-      {
-        DtlsSrtpKeyAgreement: true
-      }
-    ]
-  };
 
   sdpConstraints = {
     optional: [],
